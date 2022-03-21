@@ -76,5 +76,8 @@ contract Staking is Ownable,PriceSigner{
         Token = IERC20(_token);
     }
 
+    function setSigner(address _signer) external onlyOwner{
+        designatedSigner = _signer;
+    }
 
 }
