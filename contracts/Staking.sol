@@ -28,7 +28,7 @@ contract Staking is Ownable,PriceSigner{
         Token = IERC20(_token);
     }
 
-    function stakeNFT(uint[] memory tokenIds,Price memory price) external {
+    function stakeNFT(uint[] memory tokenIds) external {
         for(uint i=0;i<tokenIds.length;i++){
             require(NFT.ownerOf(tokenIds[i])==msg.sender,"Not owner");
             stakedTokens[tokenIds[i]] = stakeInfo(msg.sender,block.timestamp,userStaked[msg.sender].length);
