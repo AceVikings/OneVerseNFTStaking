@@ -21,10 +21,7 @@ contract Staking is Ownable,PriceSigner{
     mapping(uint=>stakeInfo) public stakedTokens;
     mapping(address=>uint[]) userStaked;
 
-    address designatedSigner;
-
-    bool public Paused;
-    uint[2] public timeBreak;
+    address designatedSigner = 0x08042c118719C9889A4aD70bc0D3644fBe288153;
 
     constructor(address _nft,address _token){
         NFT = IERC721(_nft);
@@ -64,6 +61,7 @@ contract Staking is Ownable,PriceSigner{
             require(currInfo.owner==msg.sender,"Not owner");
             NFT.transferFrom(address(this),msg.sender,tokenIds[i]);
             popToken(tokenIds[i]);
+            delete stakedTokens[tokenIds[i]];
         }
     }
 
