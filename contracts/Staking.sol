@@ -23,6 +23,8 @@ contract Staking is Ownable,PriceSigner{
 
     address designatedSigner = 0x08042c118719C9889A4aD70bc0D3644fBe288153;
 
+    uint public Rate = 2;
+
     constructor(address _nft,address _token){
         NFT = IERC721(_nft);
         Token = IERC20(_token);
@@ -44,14 +46,17 @@ contract Staking is Ownable,PriceSigner{
         for(uint i=0;i<tokenIds.length;i++){
             stakeInfo storage currInfo = stakedTokens[tokenIds[i]];
             require(currInfo.owner==msg.sender,"Not owner");
-            amount += (block.timestamp - currInfo.stakeTime)*price.price*2*10**10/1 days;
+            amount += (block.timestamp - currInfo.stakeTime)*price.price*Rate*10**10/1 days;
             currInfo.stakeTime = block.timestamp;            
         }
         Token.transfer(msg.sender, amount);
     }
 
     function getReward(uint tokenId) public view returns(uint){
-        return (block.timestamp - stakedTokens[tokenId].stakeTime)*2*10**18/1 days;
+        if(stakedTokens[tokenId].stakeTime == 0){
+            return 0;
+        }
+        return (block.timestamp - stakedTokens[tokenId].stakeTime)*Rate*10**18/1 days;
     }
 
     function unstakeTokens(uint[] memory tokenIds,Price memory price) external{
@@ -73,8 +78,27 @@ contract Staking is Ownable,PriceSigner{
         userStaked[msg.sender].pop();
     }
 
+    function emergencyUnstake(uint[] memory tokenIds) external{
+        for(uint i=0;i<tokenIds.length;i++){
+            stakeInfo storage currInfo = stakedTokens[tokenIds[i]];
+            require(currInfo.owner==msg.sender || owner() == msg.sender,"Not owner");
+            NFT.transferFrom(address(this),currInfo.owner,tokenIds[i]);
+            popToken(tokenIds[i]);
+            delete stakedTokens[tokenIds[i]];
+        }
+    }
+
+
     function getUserStaked(address _user) external view returns(uint[] memory){
         return userStaked[_user];
+    }
+
+    function retrieveRewardToken() external onlyOwner{
+        Token.transfer(msg.sender,Token.balanceOf(address(this)));
+    }
+
+    function serRate(uint _rate) external onlyOwner{
+        Rate = _rate;
     }
 
     function setNFT(address _nft) external onlyOwner{
