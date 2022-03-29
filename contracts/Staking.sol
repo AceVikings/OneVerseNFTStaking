@@ -25,6 +25,8 @@ contract Staking is Ownable,PriceSigner{
 
     uint public Rate = 2;
 
+    uint public stopTime;
+
     constructor(address _nft,address _token){
         NFT = IERC721(_nft);
         Token = IERC20(_token);
@@ -46,8 +48,14 @@ contract Staking is Ownable,PriceSigner{
         for(uint i=0;i<tokenIds.length;i++){
             stakeInfo storage currInfo = stakedTokens[tokenIds[i]];
             require(currInfo.owner==msg.sender,"Not owner");
-            amount += (block.timestamp - currInfo.stakeTime)*price.price*Rate*10**10/1 days;
-            currInfo.stakeTime = block.timestamp;            
+            if(stopTime == 0){
+                amount += (block.timestamp - currInfo.stakeTime)*price.price*Rate*10**10/1 days;
+                currInfo.stakeTime = block.timestamp;
+            }
+            else{
+                amount += (stopTime - currInfo.stakeTime)*price.price*Rate*10**10/1 days;
+                currInfo.stakeTime = stopTime;
+            }
         }
         Token.transfer(msg.sender, amount);
     }
@@ -56,7 +64,10 @@ contract Staking is Ownable,PriceSigner{
         if(stakedTokens[tokenId].stakeTime == 0){
             return 0;
         }
-        return (block.timestamp - stakedTokens[tokenId].stakeTime)*Rate*10**18/1 days;
+        if (stopTime == 0){
+            return (block.timestamp - stakedTokens[tokenId].stakeTime)*Rate*10**18/1 days;
+        }
+        return (stopTime - stakedTokens[tokenId].stakeTime)*Rate*10**18/1 days;
     }
 
     function unstakeTokens(uint[] memory tokenIds,Price memory price) external{
@@ -95,6 +106,10 @@ contract Staking is Ownable,PriceSigner{
 
     function retrieveRewardToken() external onlyOwner{
         Token.transfer(msg.sender,Token.balanceOf(address(this)));
+    }
+
+    function stopRewards() external onlyOwner{
+        stopTime = block.timestamp;
     }
 
     function serRate(uint _rate) external onlyOwner{
